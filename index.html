@@ -1,438 +1,194 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <title>VR Museum 3D</title>
+  <title>VR Museum Premium</title>
 
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/supermedium/superframe@master/components/environment/dist/aframe-environment-component.min.js"></script>
 
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      font-family: Arial, sans-serif;
-    }
-
-    .info {
-      position: fixed;
-      top: 15px;
-      left: 15px;
-      z-index: 10;
-      padding: 12px 18px;
-      background: rgba(20, 20, 20, 0.65);
-      color: white;
-      border-radius: 8px;
-      font-size: 13px;
-    }
-  </style>
+  <link rel="stylesheet" href="css/style.css">
 </head>
 
 <body>
+  <div id="loading">
+    <div class="loader"></div>
+    <p>Menyiapkan museum virtual...</p>
+  </div>
 
-  <div class="info">
-    🖱️ Mouse: Lihat sekeliling |
-    ⌨️ WASD: Bergerak
+  <div class="hud">
+    <div class="hud-title">VR MUSEUM</div>
+    <div class="hud-subtitle">Jelajahi ruang pameran secara virtual</div>
+    <div class="hud-help">
+      <b>W A S D</b> Bergerak<br>
+      <b>Mouse</b> Melihat sekeliling<br>
+      <b>E</b> Melihat informasi objek
+    </div>
+  </div>
+
+  <div id="detail-panel" class="detail-panel hidden">
+    <button id="close-detail">×</button>
+    <h2 id="detail-title">Informasi Objek</h2>
+    <p id="detail-description"></p>
   </div>
 
   <a-scene
-    background="color: #b8c5d1"
-    fog="type: exponential; color: #b8c5d1; density: 0.008"
-    renderer="colorManagement: true; physicallyCorrectLights: true">
+    id="museum"
+    renderer="antialias: true; colorManagement: true; physicallyCorrectLights: true; shadowMapEnabled: true"
+    shadow="type: pcfsoft"
+    fog="type: exponential; color: #24232b; density: 0.012"
+    background="color: #9aa5b2">
 
-    <!-- MATERIAL DAN ASET -->
-
-    <a-assets>
-
-      <a-mixin
-        id="marble"
-        material="color: #aaa6a0; roughness: 0.22; metalness: 0.08">
-      </a-mixin>
-
-      <a-mixin
-        id="wall"
-        material="color: #635e57; roughness: 0.65">
-      </a-mixin>
-
-      <a-mixin
-        id="gold"
-        material="color: #b18a52; metalness: 0.8; roughness: 0.25">
-      </a-mixin>
-
+    <a-assets timeout="30000">
+      <img id="marble-texture" src="https://threejs.org/examples/textures/brick_diffuse.jpg">
+      <img id="space-texture" src="https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg">
+      <a-asset-item id="helmet-model"
+        src="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb"></a-asset-item>
     </a-assets>
 
+    <!-- Pencahayaan utama -->
+    <a-entity light="type: ambient; color: #fff1dc; intensity: 1.5"></a-entity>
+    <a-entity light="type: hemisphere; color: #dcecff; groundColor: #66594f; intensity: 1.8"></a-entity>
+    <a-entity light="type: directional; color: #fff0d2; intensity: 4; castShadow: true"
+              position="-6 10 5" rotation="-45 -25 0"></a-entity>
+    <a-entity light="type: point; color: #ffd29b; intensity: 7; distance: 18"
+              position="0 5.5 0"></a-entity>
+    <a-entity light="type: point; color: #ffe0b5; intensity: 4; distance: 12"
+              position="-6 4 -5"></a-entity>
+    <a-entity light="type: point; color: #b8d8ff; intensity: 4; distance: 12"
+              position="6 4 -5"></a-entity>
 
-    <!-- PENCAHAYAAN -->
+    <!-- Lantai -->
+    <a-plane position="0 0 0" rotation="-90 0 0" width="30" height="30"
+      material="color: #45444a; roughness: 0.22; metalness: 0.25"
+      shadow="receive: true"></a-plane>
 
-    <a-entity
-      light="type: ambient; color: #fff0dc; intensity: 1.5">
+    <a-cylinder position="0 0.025 0" radius="8.2" height="0.05"
+      material="color: #b4a18a; roughness: 0.3"></a-cylinder>
+    <a-cylinder position="0 0.06 0" radius="7.7" height="0.05"
+      material="color: #292a30; roughness: 0.25; metalness: 0.2"></a-cylinder>
+    <a-cylinder position="0 0.095 0" radius="5.8" height="0.06"
+      material="color: #8d8175; roughness: 0.3"></a-cylinder>
+    <a-cylinder position="0 0.14 0" radius="5.5" height="0.05"
+      material="color: #d0c0a7; roughness: 0.28"></a-cylinder>
+
+    <!-- Dinding luar -->
+    <a-box position="0 3 -10" width="22" height="6" depth="0.4"
+      material="color: #514b45; roughness: 0.68"></a-box>
+    <a-box position="-11 3 0" width="0.4" height="6" depth="20"
+      material="color: #514b45; roughness: 0.68"></a-box>
+    <a-box position="11 3 0" width="0.4" height="6" depth="20"
+      material="color: #514b45; roughness: 0.68"></a-box>
+
+    <!-- Kubah bertingkat -->
+    <a-cylinder position="0 6.2 0" radius="9.3" height="0.35"
+      material="color: #d6c8b6; roughness: 0.4"></a-cylinder>
+    <a-torus position="0 6.38 0" rotation="90 0 0" radius="8.6" radius-tubular="0.18"
+      material="color: #9e886c; metalness: 0.55; roughness: 0.3"></a-torus>
+    <a-torus position="0 6.55 0" rotation="90 0 0" radius="6.6" radius-tubular="0.13"
+      material="color: #e4d7c5; roughness: 0.35"></a-torus>
+    <a-cylinder position="0 6.7 0" radius="5.2" height="0.22"
+      material="color: #6b7885; transparent: true; opacity: 0.45; roughness: 0.08; metalness: 0.1"></a-cylinder>
+
+    <!-- Pilar -->
+    <a-entity class="pillar" position="-7 3 -6"></a-entity>
+    <a-entity class="pillar" position="7 3 -6"></a-entity>
+    <a-entity class="pillar" position="-7 3 5"></a-entity>
+    <a-entity class="pillar" position="7 3 5"></a-entity>
+
+    <!-- Relief panel kiri dan kanan -->
+    <a-box position="-8.7 3 -9.72" width="3.8" height="3.4" depth="0.12"
+      material="color: #9b8167; roughness: 0.9"></a-box>
+    <a-box position="8.7 3 -9.72" width="3.8" height="3.4" depth="0.12"
+      material="color: #9b8167; roughness: 0.9"></a-box>
+
+    <!-- Patung pusat -->
+    <a-entity id="central-statue" position="0 0 -1" museum-object="title: Patung Pusat; description: Patung utama museum berada di tengah rotunda dan menjadi pusat perhatian pengunjung.">
+      <a-cylinder position="0 0.45 0" radius="2.1" height="0.9"
+        material="color: #7e746a; roughness: 0.42"></a-cylinder>
+      <a-cylinder position="0 1.0 0" radius="1.65" height="0.22"
+        material="color: #d9cbb9; roughness: 0.28"></a-cylinder>
+      <a-cylinder position="0 1.12 0" radius="1.25" height="0.18"
+        material="color: #a99782; roughness: 0.38"></a-cylinder>
+
+      <a-cylinder position="0 2.35 0" radius="0.63" height="2.25"
+        material="color: #d7d0c5; roughness: 0.62"></a-cylinder>
+      <a-sphere position="0 3.72 0" radius="0.44"
+        material="color: #d7d0c5; roughness: 0.62"></a-sphere>
+
+      <a-cylinder position="-0.65 2.75 0" radius="0.15" height="1.45"
+        rotation="0 0 -35" material="color: #d7d0c5; roughness: 0.62"></a-cylinder>
+      <a-cylinder position="0.65 2.75 0" radius="0.15" height="1.45"
+        rotation="0 0 35" material="color: #d7d0c5; roughness: 0.62"></a-cylinder>
+
+      <a-box position="0 2.4 0.15" width="1.15" height="1.8" depth="0.18"
+        rotation="0 0 8" material="color: #eee5d8; roughness: 0.7"></a-box>
     </a-entity>
 
-    <a-entity
-      light="type: directional; color: #fff2d6; intensity: 2"
-      position="-5 10 4"
-      rotation="-45 -30 0">
+    <!-- Pembatas kaca dan logam -->
+    <a-torus position="0 1.45 -1" rotation="90 0 0" radius="2.45" radius-tubular="0.045"
+      material="color: #c2a16d; metalness: 0.85; roughness: 0.22"></a-torus>
+    <a-torus position="0 1.05 -1" rotation="90 0 0" radius="2.45" radius-tubular="0.035"
+      material="color: #c2a16d; metalness: 0.85; roughness: 0.22"></a-torus>
+
+    <!-- Display artefak kiri -->
+    <a-entity position="-5.7 0 -4.7" museum-object="title: Artefak Sejarah; description: Artefak diletakkan dalam kotak display kaca dengan pencahayaan terarah agar detail benda lebih mudah diamati.">
+      <a-box position="0 0.7 0" width="2.6" height="1.4" depth="1.7"
+        material="color: #625348; roughness: 0.55"></a-box>
+      <a-box position="0 2.05 0" width="2.5" height="1.2" depth="1.6"
+        material="color: #b8d7e5; transparent: true; opacity: 0.23; metalness: 0.2; roughness: 0.04"></a-box>
+      <a-cylinder position="0 2.05 0" radius="0.38" height="0.62"
+        material="color: #92704b; roughness: 0.7"></a-cylinder>
+      <a-cylinder position="0 1.72 0" radius="0.5" height="0.08"
+        material="color: #c4a06e; metalness: 0.55"></a-cylinder>
     </a-entity>
 
-    <a-entity
-      light="type: point; color: #ffd6a0; intensity: 5; distance: 18"
-      position="0 6 0">
+    <!-- Display planet kanan -->
+    <a-entity position="5.7 0 -4.7" museum-object="title: Koleksi Ruang Angkasa; description: Koleksi planet dan benda langit memperkenalkan pengunjung pada konsep tata surya dan eksplorasi ruang angkasa.">
+      <a-box position="0 0.7 0" width="2.6" height="1.4" depth="1.7"
+        material="color: #625348; roughness: 0.55"></a-box>
+      <a-box position="0 2.05 0" width="2.5" height="1.2" depth="1.6"
+        material="color: #b8d7e5; transparent: true; opacity: 0.23; metalness: 0.2; roughness: 0.04"></a-box>
+      <a-sphere position="0 2.05 0" radius="0.48"
+        material="src: #space-texture; roughness: 0.55"></a-sphere>
+      <a-torus position="0 2.05 0" rotation="65 0 0" radius="0.7" radius-tubular="0.035"
+        material="color: #d7b77b; metalness: 0.7; roughness: 0.25"></a-torus>
     </a-entity>
 
-    <a-entity
-      light="type: point; color: #ffdfb0; intensity: 3; distance: 12"
-      position="-6 4 -5">
+    <!-- Model 3D eksternal sebagai benda pameran -->
+    <a-entity position="8 1.2 -7.8" rotation="0 30 0"
+      museum-object="title: Model 3D Eksperimental; description: Model 3D eksternal digunakan sebagai contoh objek digital yang dapat ditampilkan di dalam museum virtual.">
+      <a-box position="0 -0.7 0" width="1.8" height="0.3" depth="1.4"
+        material="color: #756653; roughness: 0.4"></a-box>
+      <a-entity gltf-model="#helmet-model" scale="0.65 0.65 0.65"></a-entity>
     </a-entity>
 
-    <a-entity
-      light="type: point; color: #ffdfb0; intensity: 3; distance: 12"
-      position="6 4 -5">
-    </a-entity>
-
-
-    <!-- LANTAI MARمر -->
-
-    <a-plane
-      rotation="-90 0 0"
-      width="30"
-      height="30"
-      material="color: #77736e; roughness: 0.2; metalness: 0.15">
-    </a-plane>
-
-    <!-- POLA LANTAI -->
-
-    <a-ring
-      position="0 0.012 0"
-      rotation="-90 0 0"
-      radius-inner="4.8"
-      radius-outer="5"
-      material="color: #c7b08b; metalness: 0.5; roughness: 0.25">
-    </a-ring>
-
-    <a-ring
-      position="0 0.014 0"
-      rotation="-90 0 0"
-      radius-inner="7.8"
-      radius-outer="8"
-      material="color: #c7b08b; metalness: 0.5; roughness: 0.25">
-    </a-ring>
-
-
-    <!-- DINDING BELAKANG -->
-
-    <a-box
-      position="0 3 -9"
-      width="20"
-      height="6"
-      depth="0.4"
-      mixin="wall">
-    </a-box>
-
-    <!-- DINDING SAMPING -->
-
-    <a-box
-      position="-10 3 0"
-      width="0.4"
-      height="6"
-      depth="18"
-      mixin="wall">
-    </a-box>
-
-    <a-box
-      position="10 3 0"
-      width="0.4"
-      height="6"
-      depth="18"
-      mixin="wall">
-    </a-box>
-
-
-    <!-- TIANG MUSEUM -->
-
-    <a-cylinder
-      position="-7 3 -6"
-      radius="0.55"
-      height="6"
-      mixin="marble">
-    </a-cylinder>
-
-    <a-cylinder
-      position="7 3 -6"
-      radius="0.55"
-      height="6"
-      mixin="marble">
-    </a-cylinder>
-
-    <a-cylinder
-      position="-7 3 5"
-      radius="0.55"
-      height="6"
-      mixin="marble">
-    </a-cylinder>
-
-    <a-cylinder
-      position="7 3 5"
-      radius="0.55"
-      height="6"
-      mixin="marble">
-    </a-cylinder>
-
-
-    <!-- KUBAH SEDERHANA -->
-
-    <a-cylinder
-      position="0 6 -1"
-      radius="6"
-      height="0.3"
-      material="color: #c9c0b3; roughness: 0.4">
-    </a-cylinder>
-
-    <a-ring
-      position="0 6 -1"
-      rotation="90 0 0"
-      radius-inner="4"
-      radius-outer="6"
-      material="color: #a59a8d; roughness: 0.4">
-    </a-ring>
-
-
-    <!-- PATUNG TENGAH MUSEUM -->
-
-    <!-- Alas patung -->
-
-    <a-cylinder
-      position="0 0.65 -1"
-      radius="2"
-      height="1.3"
-      material="color: #b6aaa0; roughness: 0.3">
-    </a-cylinder>
-
-    <a-cylinder
-      position="0 1.35 -1"
-      radius="1.55"
-      height="0.15"
-      material="color: #ded3c5; roughness: 0.25">
-    </a-cylinder>
-
-    <!-- Tubuh patung -->
-
-    <a-cylinder
-      position="0 2.4 -1"
-      radius="0.55"
-      height="1.8"
-      material="color: #d7d0c6; roughness: 0.65">
-    </a-cylinder>
-
-    <!-- Kepala -->
-
-    <a-sphere
-      position="0 3.55 -1"
-      radius="0.4"
-      material="color: #d7d0c6; roughness: 0.65">
-    </a-sphere>
-
-    <!-- Lengan -->
-
-    <a-cylinder
-      position="-0.65 2.75 -1"
-      radius="0.16"
-      height="1.3"
-      rotation="0 0 -35"
-      material="color: #d7d0c6; roughness: 0.65">
-    </a-cylinder>
-
-    <a-cylinder
-      position="0.65 2.75 -1"
-      radius="0.16"
-      height="1.3"
-      rotation="0 0 35"
-      material="color: #d7d0c6; roughness: 0.65">
-    </a-cylinder>
-
-
-    <!-- PEMBATAS PATUNG -->
-
-    <a-torus
-      position="0 1.3 -1"
-      rotation="90 0 0"
-      radius="2.3"
-      radius-tubular="0.035"
-      material="color: #b18a52; metalness: 0.8">
-    </a-torus>
-
-
-    <!-- DISPLAY KIRI -->
-
-    <a-box
-      position="-5 1.2 -4.5"
-      width="2.4"
-      height="2.4"
-      depth="1.6"
-      material="color: #75685a; roughness: 0.4">
-    </a-box>
-
-    <!-- Kaca display -->
-
-    <a-box
-      position="-5 2.55 -4.5"
-      width="2.3"
-      height="1.1"
-      depth="1.5"
-      material="color: #b7d5df; transparent: true; opacity: 0.25; roughness: 0.05; metalness: 0.1">
-    </a-box>
-
-    <!-- Artefak -->
-
-    <a-cylinder
-      position="-5 2.6 -4.5"
-      radius="0.35"
-      height="0.6"
-      material="color: #8d6747; roughness: 0.6">
-    </a-cylinder>
-
-
-    <!-- DISPLAY KANAN -->
-
-    <a-box
-      position="5 1.2 -4.5"
-      width="2.4"
-      height="2.4"
-      depth="1.6"
-      material="color: #75685a; roughness: 0.4">
-    </a-box>
-
-    <a-box
-      position="5 2.55 -4.5"
-      width="2.3"
-      height="1.1"
-      depth="1.5"
-      material="color: #b7d5df; transparent: true; opacity: 0.25; roughness: 0.05; metalness: 0.1">
-    </a-box>
-
-    <!-- Objek display -->
-
-    <a-sphere
-      position="5 2.65 -4.5"
-      radius="0.4"
-      material="color: #476c93; roughness: 0.4">
-    </a-sphere>
-
-
-    <!-- PANEL RELIEF DINDING -->
-
-    <a-box
-      position="-7.5 3 -8.7"
-      width="3.5"
-      height="3.4"
-      depth="0.15"
-      material="color: #8e8173; roughness: 0.7">
-    </a-box>
-
-    <a-box
-      position="7.5 3 -8.7"
-      width="3.5"
-      height="3.4"
-      depth="0.15"
-      material="color: #8e8173; roughness: 0.7">
-    </a-box>
-
-
-    <!-- TANAMAN -->
-
-    <a-cylinder
-      position="-8 0.7 -3"
-      radius="0.65"
-      height="1.4"
-      material="color: #5c5045; roughness: 0.7">
-    </a-cylinder>
-
-    <a-sphere
-      position="-8 2 -3"
-      radius="1"
-      material="color: #355c3a; roughness: 0.9">
-    </a-sphere>
-
-    <a-cylinder
-      position="8 0.7 -3"
-      radius="0.65"
-      height="1.4"
-      material="color: #5c5045; roughness: 0.7">
-    </a-cylinder>
-
-    <a-sphere
-      position="8 2 -3"
-      radius="1"
-      material="color: #355c3a; roughness: 0.9">
-    </a-sphere>
-
-
-    <!-- BENCH -->
-
-    <a-box
-      position="-6 0.8 3"
-      width="3"
-      height="0.3"
-      depth="0.9"
-      material="color: #40332b; roughness: 0.4">
-    </a-box>
-
-    <a-box
-      position="-7.2 0.4 3"
-      width="0.2"
-      height="0.8"
-      depth="0.7"
-      material="color: #40332b">
-    </a-box>
-
-    <a-box
-      position="-4.8 0.4 3"
-      width="0.2"
-      height="0.8"
-      depth="0.7"
-      material="color: #40332b">
-    </a-box>
-
-
-    <!-- PINTU MASUK -->
-
-    <a-box
-      position="0 3 8.8"
-      width="5"
-      height="6"
-      depth="0.3"
-      material="color: #403b35; roughness: 0.5">
-    </a-box>
-
-    <a-box
-      position="0 2.7 8.6"
-      width="2.6"
-      height="5.4"
-      depth="0.15"
-      material="color: #161b21; metalness: 0.3; roughness: 0.25">
-    </a-box>
-
-
-    <!-- KAMERA DAN KONTROL -->
-
-    <a-entity
-      position="0 1.6 6">
-
-      <a-camera
-        look-controls
-        wasd-controls="acceleration: 18">
-
-        <a-cursor
-          color="#ffffff"
-          fuse="false">
-        </a-cursor>
-
+    <!-- Tanaman dekorasi -->
+    <a-entity class="plant" position="-8 0 -3"></a-entity>
+    <a-entity class="plant" position="8 0 -3"></a-entity>
+    <a-entity class="plant" position="-8 0 4.5"></a-entity>
+    <a-entity class="plant" position="8 0 4.5"></a-entity>
+
+    <!-- Bangku -->
+    <a-box position="-6.4 0.85 3.2" width="3.2" height="0.28" depth="0.9"
+      material="color: #30241f; roughness: 0.4"></a-box>
+    <a-box position="-7.55 0.42 3.2" width="0.22" height="0.85" depth="0.7"
+      material="color: #30241f"></a-box>
+    <a-box position="-5.25 0.42 3.2" width="0.22" height="0.85" depth="0.7"
+      material="color: #30241f"></a-box>
+
+    <!-- Kamera -->
+    <a-entity id="rig" position="0 0 6">
+      <a-camera id="camera" position="0 1.65 0"
+        look-controls="pointerLockEnabled: false"
+        wasd-controls="acceleration: 16">
+        <a-cursor color="#ffffff" fuse="false"></a-cursor>
       </a-camera>
-
     </a-entity>
 
   </a-scene>
 
+  <script src="js/main.js"></script>
 </body>
 </html>
