@@ -1,156 +1,438 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VR Museum Sederhana</title>
+
+  <title>VR Museum 3D</title>
+
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
+      margin: 0;
+      overflow: hidden;
       font-family: Arial, sans-serif;
-      background: #101827;
-      color: #f5f7ff;
-      line-height: 1.6;
     }
-    header {
-      background: linear-gradient(135deg, #273469, #5b21b6);
-      padding: 55px 20px;
-      text-align: center;
-    }
-    header h1 { font-size: 2.4rem; margin-bottom: 10px; }
-    header p { max-width: 650px; margin: auto; }
-    nav {
-      background: #0b1220;
-      text-align: center;
-      padding: 15px;
-      position: sticky;
-      top: 0;
-    }
-    nav a {
+
+    .info {
+      position: fixed;
+      top: 15px;
+      left: 15px;
+      z-index: 10;
+      padding: 12px 18px;
+      background: rgba(20, 20, 20, 0.65);
       color: white;
-      text-decoration: none;
-      margin: 0 12px;
-      font-weight: bold;
-    }
-    nav a:hover { color: #a78bfa; }
-    section { max-width: 1000px; margin: auto; padding: 45px 20px; }
-    h2 { text-align: center; margin-bottom: 25px; color: #c4b5fd; }
-    .intro { text-align: center; max-width: 750px; margin: auto; }
-    .cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 20px;
-    }
-    .card {
-      background: #1e293b;
-      border: 1px solid #475569;
-      border-radius: 14px;
-      padding: 24px;
-      text-align: center;
-    }
-    .icon { font-size: 3rem; margin-bottom: 12px; }
-    .card h3 { color: #ddd6fe; margin-bottom: 10px; }
-    .button {
-      display: inline-block;
-      margin-top: 15px;
-      padding: 10px 18px;
       border-radius: 8px;
-      background: #7c3aed;
-      color: white;
-      text-decoration: none;
-      border: none;
-      cursor: pointer;
-    }
-    .button:hover { background: #a855f7; }
-    #info {
-      margin-top: 20px;
-      padding: 18px;
-      background: #312e81;
-      border-radius: 10px;
-      display: none;
-    }
-    footer {
-      text-align: center;
-      background: #0b1220;
-      padding: 25px;
-      color: #cbd5e1;
+      font-size: 13px;
     }
   </style>
 </head>
+
 <body>
 
-  <header id="beranda">
-    <h1>VR Museum</h1>
-    <p>Website sederhana untuk mengenal konsep Virtual Reality dan menjelajahi beberapa objek museum secara virtual.</p>
-  </header>
+  <div class="info">
+    🖱️ Mouse: Lihat sekeliling |
+    ⌨️ WASD: Bergerak
+  </div>
 
-  <nav>
-    <a href="#beranda">Beranda</a>
-    <a href="#tentang">Tentang VR</a>
-    <a href="#koleksi">Koleksi</a>
-    <a href="#kontak">Kontak</a>
-  </nav>
+  <a-scene
+    background="color: #b8c5d1"
+    fog="type: exponential; color: #b8c5d1; density: 0.008"
+    renderer="colorManagement: true; physicallyCorrectLights: true">
 
-  <section id="tentang">
-    <h2>Apa Itu Virtual Reality?</h2>
-    <p class="intro">
-      Virtual Reality atau VR adalah teknologi yang menciptakan lingkungan digital
-      sehingga pengguna dapat merasakan pengalaman seolah-olah berada di tempat
-      tersebut menggunakan perangkat VR.
-    </p>
-  </section>
+    <!-- MATERIAL DAN ASET -->
 
-  <section id="koleksi">
-    <h2>Koleksi Virtual Museum</h2>
-    <div class="cards">
-      <div class="card">
-        <div class="icon">🏛️</div>
-        <h3>Bangunan Kuno</h3>
-        <p>Melihat gambaran bangunan bersejarah melalui lingkungan digital.</p>
-        <button class="button" onclick="showInfo('Bangunan kuno menjadi contoh objek yang dapat divisualisasikan dalam museum virtual.')">Lihat Detail</button>
-      </div>
+    <a-assets>
 
-      <div class="card">
-        <div class="icon">🗿</div>
-        <h3>Patung Sejarah</h3>
-        <p>Mengenal benda bersejarah tanpa harus datang langsung ke museum.</p>
-        <button class="button" onclick="showInfo('Patung sejarah dapat dibuat menjadi objek 3D untuk dipelajari dari berbagai arah.')">Lihat Detail</button>
-      </div>
+      <a-mixin
+        id="marble"
+        material="color: #aaa6a0; roughness: 0.22; metalness: 0.08">
+      </a-mixin>
 
-      <div class="card">
-        <div class="icon">🌌</div>
-        <h3>Ruang Angkasa</h3>
-        <p>Merasakan pengalaman belajar tentang planet dan bintang secara virtual.</p>
-        <button class="button" onclick="showInfo('Ruang angkasa virtual dapat membantu pembelajaran planet, bintang, dan tata surya.')">Lihat Detail</button>
-      </div>
-    </div>
-    <div id="info"></div>
-  </section>
+      <a-mixin
+        id="wall"
+        material="color: #635e57; roughness: 0.65">
+      </a-mixin>
 
-  <section>
-    <h2>Manfaat Virtual Reality</h2>
-    <div class="cards">
-      <div class="card"><h3>Pendidikan</h3><p>Membantu pembelajaran melalui simulasi yang interaktif.</p></div>
-      <div class="card"><h3>Hiburan</h3><p>Memberikan pengalaman bermain dan menjelajah dunia digital.</p></div>
-      <div class="card"><h3>Simulasi</h3><p>Digunakan untuk latihan tanpa harus berada di lokasi sebenarnya.</p></div>
-    </div>
-  </section>
+      <a-mixin
+        id="gold"
+        material="color: #b18a52; metalness: 0.8; roughness: 0.25">
+      </a-mixin>
 
-  <section id="kontak">
-    <h2>Informasi Website</h2>
-    <p class="intro">Project ini dibuat menggunakan HTML, CSS, dan JavaScript sederhana untuk memenuhi tugas website Virtual Reality.</p>
-  </section>
+    </a-assets>
 
-  <footer>
-    <p>© 2026 VR Museum Sederhana | Project Individual</p>
-  </footer>
 
-  <script>
-    function showInfo(message) {
-      const info = document.getElementById("info");
-      info.textContent = message;
-      info.style.display = "block";
-    }
-  </script>
+    <!-- PENCAHAYAAN -->
+
+    <a-entity
+      light="type: ambient; color: #fff0dc; intensity: 1.5">
+    </a-entity>
+
+    <a-entity
+      light="type: directional; color: #fff2d6; intensity: 2"
+      position="-5 10 4"
+      rotation="-45 -30 0">
+    </a-entity>
+
+    <a-entity
+      light="type: point; color: #ffd6a0; intensity: 5; distance: 18"
+      position="0 6 0">
+    </a-entity>
+
+    <a-entity
+      light="type: point; color: #ffdfb0; intensity: 3; distance: 12"
+      position="-6 4 -5">
+    </a-entity>
+
+    <a-entity
+      light="type: point; color: #ffdfb0; intensity: 3; distance: 12"
+      position="6 4 -5">
+    </a-entity>
+
+
+    <!-- LANTAI MARمر -->
+
+    <a-plane
+      rotation="-90 0 0"
+      width="30"
+      height="30"
+      material="color: #77736e; roughness: 0.2; metalness: 0.15">
+    </a-plane>
+
+    <!-- POLA LANTAI -->
+
+    <a-ring
+      position="0 0.012 0"
+      rotation="-90 0 0"
+      radius-inner="4.8"
+      radius-outer="5"
+      material="color: #c7b08b; metalness: 0.5; roughness: 0.25">
+    </a-ring>
+
+    <a-ring
+      position="0 0.014 0"
+      rotation="-90 0 0"
+      radius-inner="7.8"
+      radius-outer="8"
+      material="color: #c7b08b; metalness: 0.5; roughness: 0.25">
+    </a-ring>
+
+
+    <!-- DINDING BELAKANG -->
+
+    <a-box
+      position="0 3 -9"
+      width="20"
+      height="6"
+      depth="0.4"
+      mixin="wall">
+    </a-box>
+
+    <!-- DINDING SAMPING -->
+
+    <a-box
+      position="-10 3 0"
+      width="0.4"
+      height="6"
+      depth="18"
+      mixin="wall">
+    </a-box>
+
+    <a-box
+      position="10 3 0"
+      width="0.4"
+      height="6"
+      depth="18"
+      mixin="wall">
+    </a-box>
+
+
+    <!-- TIANG MUSEUM -->
+
+    <a-cylinder
+      position="-7 3 -6"
+      radius="0.55"
+      height="6"
+      mixin="marble">
+    </a-cylinder>
+
+    <a-cylinder
+      position="7 3 -6"
+      radius="0.55"
+      height="6"
+      mixin="marble">
+    </a-cylinder>
+
+    <a-cylinder
+      position="-7 3 5"
+      radius="0.55"
+      height="6"
+      mixin="marble">
+    </a-cylinder>
+
+    <a-cylinder
+      position="7 3 5"
+      radius="0.55"
+      height="6"
+      mixin="marble">
+    </a-cylinder>
+
+
+    <!-- KUBAH SEDERHANA -->
+
+    <a-cylinder
+      position="0 6 -1"
+      radius="6"
+      height="0.3"
+      material="color: #c9c0b3; roughness: 0.4">
+    </a-cylinder>
+
+    <a-ring
+      position="0 6 -1"
+      rotation="90 0 0"
+      radius-inner="4"
+      radius-outer="6"
+      material="color: #a59a8d; roughness: 0.4">
+    </a-ring>
+
+
+    <!-- PATUNG TENGAH MUSEUM -->
+
+    <!-- Alas patung -->
+
+    <a-cylinder
+      position="0 0.65 -1"
+      radius="2"
+      height="1.3"
+      material="color: #b6aaa0; roughness: 0.3">
+    </a-cylinder>
+
+    <a-cylinder
+      position="0 1.35 -1"
+      radius="1.55"
+      height="0.15"
+      material="color: #ded3c5; roughness: 0.25">
+    </a-cylinder>
+
+    <!-- Tubuh patung -->
+
+    <a-cylinder
+      position="0 2.4 -1"
+      radius="0.55"
+      height="1.8"
+      material="color: #d7d0c6; roughness: 0.65">
+    </a-cylinder>
+
+    <!-- Kepala -->
+
+    <a-sphere
+      position="0 3.55 -1"
+      radius="0.4"
+      material="color: #d7d0c6; roughness: 0.65">
+    </a-sphere>
+
+    <!-- Lengan -->
+
+    <a-cylinder
+      position="-0.65 2.75 -1"
+      radius="0.16"
+      height="1.3"
+      rotation="0 0 -35"
+      material="color: #d7d0c6; roughness: 0.65">
+    </a-cylinder>
+
+    <a-cylinder
+      position="0.65 2.75 -1"
+      radius="0.16"
+      height="1.3"
+      rotation="0 0 35"
+      material="color: #d7d0c6; roughness: 0.65">
+    </a-cylinder>
+
+
+    <!-- PEMBATAS PATUNG -->
+
+    <a-torus
+      position="0 1.3 -1"
+      rotation="90 0 0"
+      radius="2.3"
+      radius-tubular="0.035"
+      material="color: #b18a52; metalness: 0.8">
+    </a-torus>
+
+
+    <!-- DISPLAY KIRI -->
+
+    <a-box
+      position="-5 1.2 -4.5"
+      width="2.4"
+      height="2.4"
+      depth="1.6"
+      material="color: #75685a; roughness: 0.4">
+    </a-box>
+
+    <!-- Kaca display -->
+
+    <a-box
+      position="-5 2.55 -4.5"
+      width="2.3"
+      height="1.1"
+      depth="1.5"
+      material="color: #b7d5df; transparent: true; opacity: 0.25; roughness: 0.05; metalness: 0.1">
+    </a-box>
+
+    <!-- Artefak -->
+
+    <a-cylinder
+      position="-5 2.6 -4.5"
+      radius="0.35"
+      height="0.6"
+      material="color: #8d6747; roughness: 0.6">
+    </a-cylinder>
+
+
+    <!-- DISPLAY KANAN -->
+
+    <a-box
+      position="5 1.2 -4.5"
+      width="2.4"
+      height="2.4"
+      depth="1.6"
+      material="color: #75685a; roughness: 0.4">
+    </a-box>
+
+    <a-box
+      position="5 2.55 -4.5"
+      width="2.3"
+      height="1.1"
+      depth="1.5"
+      material="color: #b7d5df; transparent: true; opacity: 0.25; roughness: 0.05; metalness: 0.1">
+    </a-box>
+
+    <!-- Objek display -->
+
+    <a-sphere
+      position="5 2.65 -4.5"
+      radius="0.4"
+      material="color: #476c93; roughness: 0.4">
+    </a-sphere>
+
+
+    <!-- PANEL RELIEF DINDING -->
+
+    <a-box
+      position="-7.5 3 -8.7"
+      width="3.5"
+      height="3.4"
+      depth="0.15"
+      material="color: #8e8173; roughness: 0.7">
+    </a-box>
+
+    <a-box
+      position="7.5 3 -8.7"
+      width="3.5"
+      height="3.4"
+      depth="0.15"
+      material="color: #8e8173; roughness: 0.7">
+    </a-box>
+
+
+    <!-- TANAMAN -->
+
+    <a-cylinder
+      position="-8 0.7 -3"
+      radius="0.65"
+      height="1.4"
+      material="color: #5c5045; roughness: 0.7">
+    </a-cylinder>
+
+    <a-sphere
+      position="-8 2 -3"
+      radius="1"
+      material="color: #355c3a; roughness: 0.9">
+    </a-sphere>
+
+    <a-cylinder
+      position="8 0.7 -3"
+      radius="0.65"
+      height="1.4"
+      material="color: #5c5045; roughness: 0.7">
+    </a-cylinder>
+
+    <a-sphere
+      position="8 2 -3"
+      radius="1"
+      material="color: #355c3a; roughness: 0.9">
+    </a-sphere>
+
+
+    <!-- BENCH -->
+
+    <a-box
+      position="-6 0.8 3"
+      width="3"
+      height="0.3"
+      depth="0.9"
+      material="color: #40332b; roughness: 0.4">
+    </a-box>
+
+    <a-box
+      position="-7.2 0.4 3"
+      width="0.2"
+      height="0.8"
+      depth="0.7"
+      material="color: #40332b">
+    </a-box>
+
+    <a-box
+      position="-4.8 0.4 3"
+      width="0.2"
+      height="0.8"
+      depth="0.7"
+      material="color: #40332b">
+    </a-box>
+
+
+    <!-- PINTU MASUK -->
+
+    <a-box
+      position="0 3 8.8"
+      width="5"
+      height="6"
+      depth="0.3"
+      material="color: #403b35; roughness: 0.5">
+    </a-box>
+
+    <a-box
+      position="0 2.7 8.6"
+      width="2.6"
+      height="5.4"
+      depth="0.15"
+      material="color: #161b21; metalness: 0.3; roughness: 0.25">
+    </a-box>
+
+
+    <!-- KAMERA DAN KONTROL -->
+
+    <a-entity
+      position="0 1.6 6">
+
+      <a-camera
+        look-controls
+        wasd-controls="acceleration: 18">
+
+        <a-cursor
+          color="#ffffff"
+          fuse="false">
+        </a-cursor>
+
+      </a-camera>
+
+    </a-entity>
+
+  </a-scene>
+
 </body>
 </html>
