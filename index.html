@@ -1,194 +1,1251 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VR Museum Premium</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Royal VR Museum</title>
 
-  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/supermedium/superframe@master/components/environment/dist/aframe-environment-component.min.js"></script>
+<style>
+* {
+  box-sizing: border-box;
+}
 
-  <link rel="stylesheet" href="css/style.css">
+body {
+  margin: 0;
+  overflow: hidden;
+  background: #111;
+  font-family: Arial, sans-serif;
+}
+
+canvas {
+  display: block;
+}
+
+#loading {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #161616;
+  color: white;
+  font-size: 18px;
+  transition: opacity .6s;
+}
+
+#loading.hide {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#hud {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 5;
+  padding: 15px 20px;
+  border-radius: 12px;
+  color: white;
+  background: rgba(15,15,20,.75);
+  backdrop-filter: blur(10px);
+  line-height: 1.8;
+  font-size: 13px;
+}
+
+#hud strong {
+  font-size: 21px;
+  letter-spacing: 3px;
+}
+
+#info {
+  display: none;
+  position: fixed;
+  right: 25px;
+  bottom: 25px;
+  z-index: 5;
+  width: 350px;
+  padding: 22px;
+  color: white;
+  background: rgba(20,18,20,.95);
+  border: 1px solid #c7a16a;
+  border-radius: 15px;
+}
+
+#info h2 {
+  margin-top: 0;
+  color: #e4c18b;
+}
+
+#close {
+  float: right;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 25px;
+  cursor: pointer;
+}
+</style>
 </head>
 
 <body>
-  <div id="loading">
-    <div class="loader"></div>
-    <p>Menyiapkan museum virtual...</p>
-  </div>
 
-  <div class="hud">
-    <div class="hud-title">VR MUSEUM</div>
-    <div class="hud-subtitle">Jelajahi ruang pameran secara virtual</div>
-    <div class="hud-help">
-      <b>W A S D</b> Bergerak<br>
-      <b>Mouse</b> Melihat sekeliling<br>
-      <b>E</b> Melihat informasi objek
-    </div>
-  </div>
+<div id="loading">
+  Menyiapkan Royal VR Museum...
+</div>
 
-  <div id="detail-panel" class="detail-panel hidden">
-    <button id="close-detail">×</button>
-    <h2 id="detail-title">Informasi Objek</h2>
-    <p id="detail-description"></p>
-  </div>
+<div id="hud">
+  <strong>ROYAL MUSEUM</strong><br>
+  Mouse: Melihat sekeliling<br>
+  W A S D: Bergerak<br>
+  Klik objek kaca: Informasi
+</div>
 
-  <a-scene
-    id="museum"
-    renderer="antialias: true; colorManagement: true; physicallyCorrectLights: true; shadowMapEnabled: true"
-    shadow="type: pcfsoft"
-    fog="type: exponential; color: #24232b; density: 0.012"
-    background="color: #9aa5b2">
+<div id="info">
+  <button id="close">×</button>
+  <h2 id="infoTitle"></h2>
+  <p id="infoText"></p>
+</div>
 
-    <a-assets timeout="30000">
-      <img id="marble-texture" src="https://threejs.org/examples/textures/brick_diffuse.jpg">
-      <img id="space-texture" src="https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg">
-      <a-asset-item id="helmet-model"
-        src="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb"></a-asset-item>
-    </a-assets>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
 
-    <!-- Pencahayaan utama -->
-    <a-entity light="type: ambient; color: #fff1dc; intensity: 1.5"></a-entity>
-    <a-entity light="type: hemisphere; color: #dcecff; groundColor: #66594f; intensity: 1.8"></a-entity>
-    <a-entity light="type: directional; color: #fff0d2; intensity: 4; castShadow: true"
-              position="-6 10 5" rotation="-45 -25 0"></a-entity>
-    <a-entity light="type: point; color: #ffd29b; intensity: 7; distance: 18"
-              position="0 5.5 0"></a-entity>
-    <a-entity light="type: point; color: #ffe0b5; intensity: 4; distance: 12"
-              position="-6 4 -5"></a-entity>
-    <a-entity light="type: point; color: #b8d8ff; intensity: 4; distance: 12"
-              position="6 4 -5"></a-entity>
+<script type="module">
 
-    <!-- Lantai -->
-    <a-plane position="0 0 0" rotation="-90 0 0" width="30" height="30"
-      material="color: #45444a; roughness: 0.22; metalness: 0.25"
-      shadow="receive: true"></a-plane>
+import * as THREE from "three";
 
-    <a-cylinder position="0 0.025 0" radius="8.2" height="0.05"
-      material="color: #b4a18a; roughness: 0.3"></a-cylinder>
-    <a-cylinder position="0 0.06 0" radius="7.7" height="0.05"
-      material="color: #292a30; roughness: 0.25; metalness: 0.2"></a-cylinder>
-    <a-cylinder position="0 0.095 0" radius="5.8" height="0.06"
-      material="color: #8d8175; roughness: 0.3"></a-cylinder>
-    <a-cylinder position="0 0.14 0" radius="5.5" height="0.05"
-      material="color: #d0c0a7; roughness: 0.28"></a-cylinder>
+import {
+  OrbitControls
+} from "three/addons/controls/OrbitControls.js";
 
-    <!-- Dinding luar -->
-    <a-box position="0 3 -10" width="22" height="6" depth="0.4"
-      material="color: #514b45; roughness: 0.68"></a-box>
-    <a-box position="-11 3 0" width="0.4" height="6" depth="20"
-      material="color: #514b45; roughness: 0.68"></a-box>
-    <a-box position="11 3 0" width="0.4" height="6" depth="20"
-      material="color: #514b45; roughness: 0.68"></a-box>
 
-    <!-- Kubah bertingkat -->
-    <a-cylinder position="0 6.2 0" radius="9.3" height="0.35"
-      material="color: #d6c8b6; roughness: 0.4"></a-cylinder>
-    <a-torus position="0 6.38 0" rotation="90 0 0" radius="8.6" radius-tubular="0.18"
-      material="color: #9e886c; metalness: 0.55; roughness: 0.3"></a-torus>
-    <a-torus position="0 6.55 0" rotation="90 0 0" radius="6.6" radius-tubular="0.13"
-      material="color: #e4d7c5; roughness: 0.35"></a-torus>
-    <a-cylinder position="0 6.7 0" radius="5.2" height="0.22"
-      material="color: #6b7885; transparent: true; opacity: 0.45; roughness: 0.08; metalness: 0.1"></a-cylinder>
+// =============================
+// SCENE
+// =============================
 
-    <!-- Pilar -->
-    <a-entity class="pillar" position="-7 3 -6"></a-entity>
-    <a-entity class="pillar" position="7 3 -6"></a-entity>
-    <a-entity class="pillar" position="-7 3 5"></a-entity>
-    <a-entity class="pillar" position="7 3 5"></a-entity>
+const scene = new THREE.Scene();
 
-    <!-- Relief panel kiri dan kanan -->
-    <a-box position="-8.7 3 -9.72" width="3.8" height="3.4" depth="0.12"
-      material="color: #9b8167; roughness: 0.9"></a-box>
-    <a-box position="8.7 3 -9.72" width="3.8" height="3.4" depth="0.12"
-      material="color: #9b8167; roughness: 0.9"></a-box>
+scene.background = new THREE.Color(0x9daab8);
 
-    <!-- Patung pusat -->
-    <a-entity id="central-statue" position="0 0 -1" museum-object="title: Patung Pusat; description: Patung utama museum berada di tengah rotunda dan menjadi pusat perhatian pengunjung.">
-      <a-cylinder position="0 0.45 0" radius="2.1" height="0.9"
-        material="color: #7e746a; roughness: 0.42"></a-cylinder>
-      <a-cylinder position="0 1.0 0" radius="1.65" height="0.22"
-        material="color: #d9cbb9; roughness: 0.28"></a-cylinder>
-      <a-cylinder position="0 1.12 0" radius="1.25" height="0.18"
-        material="color: #a99782; roughness: 0.38"></a-cylinder>
+scene.fog = new THREE.FogExp2(
+  0x9daab8,
+  0.008
+);
 
-      <a-cylinder position="0 2.35 0" radius="0.63" height="2.25"
-        material="color: #d7d0c5; roughness: 0.62"></a-cylinder>
-      <a-sphere position="0 3.72 0" radius="0.44"
-        material="color: #d7d0c5; roughness: 0.62"></a-sphere>
 
-      <a-cylinder position="-0.65 2.75 0" radius="0.15" height="1.45"
-        rotation="0 0 -35" material="color: #d7d0c5; roughness: 0.62"></a-cylinder>
-      <a-cylinder position="0.65 2.75 0" radius="0.15" height="1.45"
-        rotation="0 0 35" material="color: #d7d0c5; roughness: 0.62"></a-cylinder>
+// =============================
+// CAMERA
+// =============================
 
-      <a-box position="0 2.4 0.15" width="1.15" height="1.8" depth="0.18"
-        rotation="0 0 8" material="color: #eee5d8; roughness: 0.7"></a-box>
-    </a-entity>
+const camera = new THREE.PerspectiveCamera(
+  65,
+  window.innerWidth / window.innerHeight,
+  0.1,
+  100
+);
 
-    <!-- Pembatas kaca dan logam -->
-    <a-torus position="0 1.45 -1" rotation="90 0 0" radius="2.45" radius-tubular="0.045"
-      material="color: #c2a16d; metalness: 0.85; roughness: 0.22"></a-torus>
-    <a-torus position="0 1.05 -1" rotation="90 0 0" radius="2.45" radius-tubular="0.035"
-      material="color: #c2a16d; metalness: 0.85; roughness: 0.22"></a-torus>
+camera.position.set(0, 2.4, 12);
 
-    <!-- Display artefak kiri -->
-    <a-entity position="-5.7 0 -4.7" museum-object="title: Artefak Sejarah; description: Artefak diletakkan dalam kotak display kaca dengan pencahayaan terarah agar detail benda lebih mudah diamati.">
-      <a-box position="0 0.7 0" width="2.6" height="1.4" depth="1.7"
-        material="color: #625348; roughness: 0.55"></a-box>
-      <a-box position="0 2.05 0" width="2.5" height="1.2" depth="1.6"
-        material="color: #b8d7e5; transparent: true; opacity: 0.23; metalness: 0.2; roughness: 0.04"></a-box>
-      <a-cylinder position="0 2.05 0" radius="0.38" height="0.62"
-        material="color: #92704b; roughness: 0.7"></a-cylinder>
-      <a-cylinder position="0 1.72 0" radius="0.5" height="0.08"
-        material="color: #c4a06e; metalness: 0.55"></a-cylinder>
-    </a-entity>
 
-    <!-- Display planet kanan -->
-    <a-entity position="5.7 0 -4.7" museum-object="title: Koleksi Ruang Angkasa; description: Koleksi planet dan benda langit memperkenalkan pengunjung pada konsep tata surya dan eksplorasi ruang angkasa.">
-      <a-box position="0 0.7 0" width="2.6" height="1.4" depth="1.7"
-        material="color: #625348; roughness: 0.55"></a-box>
-      <a-box position="0 2.05 0" width="2.5" height="1.2" depth="1.6"
-        material="color: #b8d7e5; transparent: true; opacity: 0.23; metalness: 0.2; roughness: 0.04"></a-box>
-      <a-sphere position="0 2.05 0" radius="0.48"
-        material="src: #space-texture; roughness: 0.55"></a-sphere>
-      <a-torus position="0 2.05 0" rotation="65 0 0" radius="0.7" radius-tubular="0.035"
-        material="color: #d7b77b; metalness: 0.7; roughness: 0.25"></a-torus>
-    </a-entity>
+// =============================
+// RENDERER
+// =============================
 
-    <!-- Model 3D eksternal sebagai benda pameran -->
-    <a-entity position="8 1.2 -7.8" rotation="0 30 0"
-      museum-object="title: Model 3D Eksperimental; description: Model 3D eksternal digunakan sebagai contoh objek digital yang dapat ditampilkan di dalam museum virtual.">
-      <a-box position="0 -0.7 0" width="1.8" height="0.3" depth="1.4"
-        material="color: #756653; roughness: 0.4"></a-box>
-      <a-entity gltf-model="#helmet-model" scale="0.65 0.65 0.65"></a-entity>
-    </a-entity>
+const renderer = new THREE.WebGLRenderer({
+  antialias: true
+});
 
-    <!-- Tanaman dekorasi -->
-    <a-entity class="plant" position="-8 0 -3"></a-entity>
-    <a-entity class="plant" position="8 0 -3"></a-entity>
-    <a-entity class="plant" position="-8 0 4.5"></a-entity>
-    <a-entity class="plant" position="8 0 4.5"></a-entity>
+renderer.setSize(
+  window.innerWidth,
+  window.innerHeight
+);
 
-    <!-- Bangku -->
-    <a-box position="-6.4 0.85 3.2" width="3.2" height="0.28" depth="0.9"
-      material="color: #30241f; roughness: 0.4"></a-box>
-    <a-box position="-7.55 0.42 3.2" width="0.22" height="0.85" depth="0.7"
-      material="color: #30241f"></a-box>
-    <a-box position="-5.25 0.42 3.2" width="0.22" height="0.85" depth="0.7"
-      material="color: #30241f"></a-box>
+renderer.setPixelRatio(
+  Math.min(window.devicePixelRatio, 2)
+);
 
-    <!-- Kamera -->
-    <a-entity id="rig" position="0 0 6">
-      <a-camera id="camera" position="0 1.65 0"
-        look-controls="pointerLockEnabled: false"
-        wasd-controls="acceleration: 16">
-        <a-cursor color="#ffffff" fuse="false"></a-cursor>
-      </a-camera>
-    </a-entity>
+renderer.shadowMap.enabled = true;
 
-  </a-scene>
+renderer.shadowMap.type =
+  THREE.PCFSoftShadowMap;
 
-  <script src="js/main.js"></script>
+renderer.toneMapping =
+  THREE.ACESFilmicToneMapping;
+
+renderer.toneMappingExposure = 1.25;
+
+document.body.appendChild(
+  renderer.domElement
+);
+
+
+// =============================
+// CONTROLS
+// =============================
+
+const controls = new OrbitControls(
+  camera,
+  renderer.domElement
+);
+
+controls.target.set(0, 2.5, -1);
+
+controls.enableDamping = true;
+
+controls.maxPolarAngle =
+  Math.PI * 0.49;
+
+controls.minDistance = 2;
+
+controls.maxDistance = 18;
+
+
+// =============================
+// MATERIALS
+// =============================
+
+const marble = new THREE.MeshStandardMaterial({
+  color: 0xd2c4b2,
+  roughness: 0.3,
+  metalness: 0.05
+});
+
+const darkMarble = new THREE.MeshStandardMaterial({
+  color: 0x25262b,
+  roughness: 0.18,
+  metalness: 0.35
+});
+
+const wallMaterial = new THREE.MeshStandardMaterial({
+  color: 0x39343a,
+  roughness: 0.7
+});
+
+const gold = new THREE.MeshStandardMaterial({
+  color: 0xb68b52,
+  roughness: 0.22,
+  metalness: 0.85
+});
+
+const wood = new THREE.MeshStandardMaterial({
+  color: 0x30231c,
+  roughness: 0.4
+});
+
+const plantMaterial = new THREE.MeshStandardMaterial({
+  color: 0x254d35,
+  roughness: 0.9
+});
+
+const glass = new THREE.MeshPhysicalMaterial({
+  color: 0xbad9e7,
+  transparent: true,
+  opacity: 0.22,
+  roughness: 0.04,
+  transmission: 0.25
+});
+
+
+// =============================
+// HELPER
+// =============================
+
+function add(mesh) {
+
+  mesh.castShadow = true;
+
+  mesh.receiveShadow = true;
+
+  scene.add(mesh);
+
+  return mesh;
+}
+
+
+function box(
+  width,
+  height,
+  depth,
+  material,
+  x,
+  y,
+  z
+) {
+
+  const mesh = new THREE.Mesh(
+    new THREE.BoxGeometry(
+      width,
+      height,
+      depth
+    ),
+    material
+  );
+
+  mesh.position.set(x, y, z);
+
+  return add(mesh);
+}
+
+
+function cylinder(
+  radius,
+  height,
+  material,
+  x,
+  y,
+  z
+) {
+
+  const mesh = new THREE.Mesh(
+    new THREE.CylinderGeometry(
+      radius,
+      radius,
+      height,
+      64
+    ),
+    material
+  );
+
+  mesh.position.set(x, y, z);
+
+  return add(mesh);
+}
+
+
+function ring(
+  radius,
+  tube,
+  material,
+  x,
+  y,
+  z
+) {
+
+  const mesh = new THREE.Mesh(
+    new THREE.TorusGeometry(
+      radius,
+      tube,
+      24,
+      128
+    ),
+    material
+  );
+
+  mesh.rotation.x =
+    -Math.PI / 2;
+
+  mesh.position.set(x, y, z);
+
+  return add(mesh);
+}
+
+
+// =============================
+// FLOOR
+// =============================
+
+// Lantai utama
+
+box(
+  30,
+  0.25,
+  30,
+  darkMarble,
+  0,
+  -0.15,
+  0
+);
+
+
+// Lantai lingkaran
+
+cylinder(
+  9.5,
+  0.18,
+  marble,
+  0,
+  0,
+  0
+);
+
+cylinder(
+  8.8,
+  0.08,
+  darkMarble,
+  0,
+  0.14,
+  0
+);
+
+cylinder(
+  6.5,
+  0.08,
+  marble,
+  0,
+  0.21,
+  0
+);
+
+
+// Garis emas lantai
+
+ring(
+  8.8,
+  0.06,
+  gold,
+  0,
+  0.25,
+  0
+);
+
+ring(
+  6.5,
+  0.045,
+  gold,
+  0,
+  0.30,
+  0
+);
+
+
+// =============================
+// WALLS
+// =============================
+
+box(
+  22,
+  7,
+  0.4,
+  wallMaterial,
+  0,
+  3.5,
+  -10
+);
+
+box(
+  0.4,
+  7,
+  20,
+  wallMaterial,
+  -11,
+  3.5,
+  0
+);
+
+box(
+  0.4,
+  7,
+  20,
+  wallMaterial,
+  11,
+  3.5,
+  0
+);
+
+
+// =============================
+// RELIEF PANELS
+// =============================
+
+const relief = new THREE.MeshStandardMaterial({
+  color: 0x80664e,
+  roughness: 0.95
+});
+
+box(
+  4.5,
+  3.6,
+  0.12,
+  relief,
+  -8.5,
+  3.2,
+  -9.73
+);
+
+box(
+  4.5,
+  3.6,
+  0.12,
+  relief,
+  8.5,
+  3.2,
+  -9.73
+);
+
+
+// =============================
+// PILLARS
+// =============================
+
+function createPillar(x, z) {
+
+  cylinder(
+    0.8,
+    0.35,
+    marble,
+    x,
+    0.35,
+    z
+  );
+
+  cylinder(
+    0.5,
+    5.7,
+    marble,
+    x,
+    3.15,
+    z
+  );
+
+  cylinder(
+    0.8,
+    0.3,
+    marble,
+    x,
+    6.05,
+    z
+  );
+
+  ring(
+    0.58,
+    0.055,
+    gold,
+    x,
+    5.88,
+    z
+  );
+
+}
+
+[-7, 7].forEach(x => {
+
+  [-6, 5].forEach(z => {
+
+    createPillar(x, z);
+
+  });
+
+});
+
+
+// =============================
+// DOME
+// =============================
+
+cylinder(
+  9.3,
+  0.3,
+  marble,
+  0,
+  6.55,
+  0
+);
+
+ring(
+  8.75,
+  0.17,
+  gold,
+  0,
+  6.75,
+  0
+);
+
+ring(
+  7.25,
+  0.12,
+  marble,
+  0,
+  6.92,
+  0
+);
+
+
+// Skylight
+
+const skylight = new THREE.Mesh(
+  new THREE.CylinderGeometry(
+    5.9,
+    5.9,
+    0.12,
+    96
+  ),
+  new THREE.MeshPhysicalMaterial({
+    color: 0x8ecbf0,
+    transparent: true,
+    opacity: 0.3,
+    roughness: 0.08,
+    transmission: 0.3
+  })
+);
+
+skylight.position.set(
+  0,
+  7.05,
+  0
+);
+
+add(skylight);
+
+
+// =============================
+// LIGHTING
+// =============================
+
+scene.add(
+  new THREE.HemisphereLight(
+    0xdcecff,
+    0x51463d,
+    2.2
+  )
+);
+
+
+const sunlight =
+  new THREE.DirectionalLight(
+    0xffe4c2,
+    4.8
+  );
+
+sunlight.position.set(
+  -6,
+  12,
+  5
+);
+
+sunlight.castShadow = true;
+
+sunlight.shadow.mapSize.set(
+  2048,
+  2048
+);
+
+scene.add(sunlight);
+
+
+// Lampu hangat
+
+for (let i = 0; i < 18; i++) {
+
+  const angle =
+    i / 18 * Math.PI * 2;
+
+  const x =
+    Math.cos(angle) * 7.3;
+
+  const z =
+    Math.sin(angle) * 7.3;
+
+  const light =
+    new THREE.PointLight(
+      0xffd5a0,
+      2.2,
+      5.2
+    );
+
+  light.position.set(
+    x,
+    5.8,
+    z
+  );
+
+  scene.add(light);
+
+}
+
+
+// =============================
+// CENTRAL STATUE
+// =============================
+
+const statue =
+  new THREE.Group();
+
+statue.position.set(
+  0,
+  0,
+  -1
+);
+
+scene.add(statue);
+
+
+function statuePart(
+  geometry,
+  material,
+  x,
+  y,
+  z
+) {
+
+  const mesh = new THREE.Mesh(
+    geometry,
+    material
+  );
+
+  mesh.position.set(
+    x,
+    y,
+    z
+  );
+
+  mesh.castShadow = true;
+
+  mesh.receiveShadow = true;
+
+  statue.add(mesh);
+
+}
+
+
+// Base
+
+statuePart(
+  new THREE.CylinderGeometry(
+    2.15,
+    2.3,
+    0.85,
+    96
+  ),
+  darkMarble,
+  0,
+  0.55,
+  0
+);
+
+
+// Pedestal
+
+statuePart(
+  new THREE.CylinderGeometry(
+    1.7,
+    1.9,
+    0.22,
+    96
+  ),
+  marble,
+  0,
+  1.08,
+  0
+);
+
+
+// Body
+
+statuePart(
+  new THREE.CylinderGeometry(
+    0.7,
+    1.05,
+    2.3,
+    64
+  ),
+  marble,
+  0,
+  2.3,
+  0
+);
+
+
+// Head
+
+statuePart(
+  new THREE.SphereGeometry(
+    0.47,
+    48,
+    32
+  ),
+  marble,
+  0,
+  3.72,
+  0
+);
+
+
+// Arms
+
+statuePart(
+  new THREE.CylinderGeometry(
+    0.15,
+    0.2,
+    1.6,
+    32
+  ),
+  marble,
+  -0.68,
+  2.75,
+  0
+);
+
+statuePart(
+  new THREE.CylinderGeometry(
+    0.15,
+    0.2,
+    1.6,
+    32
+  ),
+  marble,
+  0.68,
+  2.75,
+  0
+);
+
+
+// =============================
+// CENTRAL BARRIER
+// =============================
+
+ring(
+  2.6,
+  0.055,
+  gold,
+  0,
+  1.46,
+  -1
+);
+
+ring(
+  2.6,
+  0.035,
+  gold,
+  0,
+  1.09,
+  -1
+);
+
+
+// =============================
+// PLANTS
+// =============================
+
+function createPlant(x, z) {
+
+  cylinder(
+    0.56,
+    1.05,
+    wood,
+    x,
+    0.55,
+    z
+  );
+
+  const leaves =
+    new THREE.Mesh(
+      new THREE.SphereGeometry(
+        1.05,
+        32,
+        24
+      ),
+      plantMaterial
+    );
+
+  leaves.position.set(
+    x,
+    1.8,
+    z
+  );
+
+  leaves.scale.set(
+    1.2,
+    1.35,
+    1.1
+  );
+
+  add(leaves);
+
+}
+
+
+[-8, 8].forEach(x => {
+
+  [-3, 4.5].forEach(z => {
+
+    createPlant(x, z);
+
+  });
+
+});
+
+
+// =============================
+// DISPLAY CASES
+// =============================
+
+const interactiveObjects = [];
+
+
+function createDisplay(
+  x,
+  z,
+  type,
+  title,
+  description
+) {
+
+  // Cabinet
+
+  box(
+    2.9,
+    1.1,
+    1.9,
+    darkMarble,
+    x,
+    0.55,
+    z
+  );
+
+
+  // Glass
+
+  const glassCase = box(
+    2.7,
+    1.65,
+    1.7,
+    glass,
+    x,
+    1.9,
+    z
+  );
+
+  glassCase.userData = {
+    title,
+    description
+  };
+
+  interactiveObjects.push(
+    glassCase
+  );
+
+
+  // Object inside
+
+  if (type === "vase") {
+
+    cylinder(
+      0.4,
+      0.75,
+      gold,
+      x,
+      1.9,
+      z
+    );
+
+  } else {
+
+    const planet =
+      new THREE.Mesh(
+        new THREE.SphereGeometry(
+          0.5,
+          48,
+          32
+        ),
+        new THREE.MeshStandardMaterial({
+          color: 0x397ab8,
+          roughness: 0.45
+        })
+      );
+
+    planet.position.set(
+      x,
+      1.9,
+      z
+    );
+
+    add(planet);
+
+  }
+
+}
+
+
+createDisplay(
+  -5.8,
+  -4.8,
+  "vase",
+  "Artefak Sejarah",
+  "Artefak sejarah ditempatkan dalam kotak kaca dengan pencahayaan hangat."
+);
+
+
+createDisplay(
+  5.8,
+  -4.8,
+  "planet",
+  "Koleksi Ruang Angkasa",
+  "Model planet memperkenalkan tata surya dan eksplorasi ruang angkasa."
+);
+
+
+// =============================
+// BENCH
+// =============================
+
+box(
+  3.6,
+  0.3,
+  1,
+  wood,
+  -6.5,
+  0.9,
+  3.2
+);
+
+box(
+  0.2,
+  0.8,
+  0.7,
+  darkMarble,
+  -7.7,
+  0.4,
+  3.2
+);
+
+box(
+  0.2,
+  0.8,
+  0.7,
+  darkMarble,
+  -5.3,
+  0.4,
+  3.2
+);
+
+
+// =============================
+// OBJECT INTERACTION
+// =============================
+
+const raycaster =
+  new THREE.Raycaster();
+
+const mouse =
+  new THREE.Vector2();
+
+
+renderer.domElement.addEventListener(
+  "click",
+  event => {
+
+    mouse.x =
+      event.clientX /
+      window.innerWidth * 2 - 1;
+
+    mouse.y =
+      -(event.clientY /
+      window.innerHeight) * 2 + 1;
+
+    raycaster.setFromCamera(
+      mouse,
+      camera
+    );
+
+    const hits =
+      raycaster.intersectObjects(
+        interactiveObjects
+      );
+
+    if (hits.length > 0) {
+
+      const object =
+        hits[0].object;
+
+      document.getElementById(
+        "infoTitle"
+      ).textContent =
+        object.userData.title;
+
+      document.getElementById(
+        "infoText"
+      ).textContent =
+        object.userData.description;
+
+      document.getElementById(
+        "info"
+      ).style.display = "block";
+
+    }
+
+  }
+);
+
+
+document.getElementById(
+  "close"
+).onclick = () => {
+
+  document.getElementById(
+    "info"
+  ).style.display = "none";
+
+};
+
+
+// =============================
+// WASD MOVEMENT
+// =============================
+
+const keys = {};
+
+window.addEventListener(
+  "keydown",
+  event => {
+
+    keys[
+      event.key.toLowerCase()
+    ] = true;
+
+  }
+);
+
+window.addEventListener(
+  "keyup",
+  event => {
+
+    keys[
+      event.key.toLowerCase()
+    ] = false;
+
+  }
+);
+
+
+function movePlayer() {
+
+  const speed = 0.085;
+
+  const direction =
+    new THREE.Vector3();
+
+  camera.getWorldDirection(
+    direction
+  );
+
+  direction.y = 0;
+
+  direction.normalize();
+
+  const side =
+    new THREE.Vector3()
+      .crossVectors(
+        camera.up,
+        direction
+      )
+      .normalize();
+
+
+  if (keys.w) {
+
+    camera.position.addScaledVector(
+      direction,
+      speed
+    );
+
+  }
+
+  if (keys.s) {
+
+    camera.position.addScaledVector(
+      direction,
+      -speed
+    );
+
+  }
+
+  if (keys.a) {
+
+    camera.position.addScaledVector(
+      side,
+      speed
+    );
+
+  }
+
+  if (keys.d) {
+
+    camera.position.addScaledVector(
+      side,
+      -speed
+    );
+
+  }
+
+
+  camera.position.y = 2.4;
+
+  camera.position.x =
+    THREE.MathUtils.clamp(
+      camera.position.x,
+      -9.5,
+      9.5
+    );
+
+  camera.position.z =
+    THREE.MathUtils.clamp(
+      camera.position.z,
+      -8.5,
+      8.5
+    );
+
+}
+
+
+// =============================
+// RESPONSIVE
+// =============================
+
+window.addEventListener(
+  "resize",
+  () => {
+
+    camera.aspect =
+      window.innerWidth /
+      window.innerHeight;
+
+    camera.updateProjectionMatrix();
+
+    renderer.setSize(
+      window.innerWidth,
+      window.innerHeight
+    );
+
+  }
+);
+
+
+// =============================
+// START
+// =============================
+
+document.getElementById(
+  "loading"
+).classList.add("hide");
+
+
+function animate() {
+
+  requestAnimationFrame(
+    animate
+  );
+
+  movePlayer();
+
+  controls.update();
+
+  renderer.render(
+    scene,
+    camera
+  );
+
+}
+
+animate();
+
+</script>
+
 </body>
 </html>
