@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>ARCADIA — Museum VR</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="loading"><div class="loader"></div><h1>ARCADIA</h1><p>Memuat ruang pamer...</p><small id="loadError"></small></div>
+<div id="hud">
+  <div class="brand"><b>ARCADIA</b><span>MUSEUM OF CIVILIZATION</span></div>
+  <div class="live">● LIVE EXHIBITION</div>
+  <div class="location"><small>LOKASI</small><strong id="location">CENTRAL ROTUNDA</strong></div>
+  <div class="help"><b>W A S D</b> Bergerak &nbsp; <b>MOUSE</b> Melihat &nbsp; <b>E / KLIK</b> Informasi &nbsp; <b>ESC</b> Keluar</div>
+  <div id="prompt">Klik layar untuk mulai</div>
+  <div class="crosshair"></div>
+</div>
+<aside id="info" class="hidden"><button id="close">×</button><small>COLLECTION NOTE</small><h2 id="infoTitle"></h2><p id="infoText"></p></aside>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
